@@ -22,17 +22,14 @@ jobs:
       # 第二步 (新增/缓存方案)：缓存并恢复结果文件
       # 这一步会尝试恢复上一次运行保存的 previous_results.json 文件
       # 如果找到了，脚本就能进行比较；如果没找到（比如第一次运行），则会跳过。
-      - name: Cache and restore results file
-        uses: actions/cache@v4
-        id: cache-results # 给这个步骤一个ID，方便调试
+      - name: Restore results file from cache
+        uses: actions/cache/restore@v4
+        id: cache-restore
         with:
-          # 要缓存的文件路径
           path: previous_results.json
-          # 使用固定的缓存键，确保每次都能恢复和更新同一个缓存
-          key: finder-results-v1
-          # 添加恢复键，用于恢复之前的缓存
+          key: finder-results-v1-${{ github.run_id }}
           restore-keys: |
-            finder-results-
+            finder-results-v1-
 
       # 调试步骤：检查缓存是否正常工作
       - name: Debug cache status
@@ -82,6 +79,11 @@ jobs:
         run: python main.py
 
       # 第七步 (新增)：上传结果和调试文件作为构建产物
+      - name: Save results file to cache
+        uses: actions/cache/save@v4
+        with:
+          path: previous_results.json
+          key: finder-results-v1-${{ github.run_id }}
       - name: Upload results and debug files
         uses: actions/upload-artifact@v4
         # 只有在调试模式或脚本失败时才上传文件
@@ -96,4 +98,4 @@ jobs:
           # 如果找不到文件也不要报错
           if-no-files-found: ignore
           # 新增：设置保留天数
-          retention-days: 7
+          retention-days: 1
